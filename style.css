@@ -216,7 +216,7 @@ body {
 .center-landmark-info img {
     width: 100%;
     max-height: 160px;
-    object-fit: cover;
+    object-fit: contain; /* 👈 이 부분을 cover 에서 contain 으로 변경하세요 */
     border-radius: 12px;
     margin-bottom: 10px;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
