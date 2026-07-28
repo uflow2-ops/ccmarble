@@ -80,11 +80,11 @@ const RANDOM_EVENTS = [
     { title: "☔ 갑작스러운 소나기", desc: "갑자기 비가 내려 근처 쉼터에서 비를 피합니다.\n(다음 1턴 쉬어가기)", score: 0, move: 0, skip: 1 }
 ];
 
-/* ===== 구글 시트 연동 세팅 ===== */
-window.boardData = []; // 구글 시트에서 데이터를 받아올 빈 배열
+/* ===== 구글 시트 읽기 전용 연동 세팅 ===== */
+window.boardData = []; 
 const webAppUrl = "https://script.google.com/macros/s/AKfycbwAJ2Q-W21AVUkh4-ydZ9w7PckFLTxLMpHUvME6WJNUB8aJgtUev7leiYiCiTrB3FBcjA/exec";
 
-// 1. 게임 시작 시 구글 시트에서 데이터 불러오기
+// 1. 게임 시작 시 구글 시트에서 데이터 불러오기 (읽기 전용)
 async function loadBoardDataFromSheet() {
     try {
         const response = await fetch(webAppUrl);
@@ -108,7 +108,6 @@ window.addEventListener('DOMContentLoaded', async () => {
 window.handleSpecialSpace = function (cell) {
     const p = window.players[window.currentPlayer];
     
-    // 고정 특수 공간 처리
     if (cell.id === 7) { 
         alert(`🚡 ${cell.name}\n\n${cell.desc}`);
         window.skipPlayers[window.currentPlayer] = 1;
@@ -130,7 +129,6 @@ window.handleSpecialSpace = function (cell) {
         return;
     }
 
-    // 무작위 랜덤 이벤트 공간 처리 (4, 10, 17, 24번)
     if ([4, 10, 17, 24].includes(cell.id)) {
         const randomIndex = Math.floor(Math.random() * RANDOM_EVENTS.length);
         const event = RANDOM_EVENTS[randomIndex];
@@ -202,17 +200,18 @@ window.updateNicknameFields = function () {
 window.landUpgrades = {}; 
 window.isUpgradeAttempt = false; 
 
-window.initLocalGame = function () {
+window.initLocalGame = async function () {
+    if (!window.boardData || window.boardData.length === 0) {
+        alert('보드판 데이터를 불러오는 중입니다. 잠시만 기다려주세요.');
+        await loadBoardDataFromSheet();
+        return;
+    }
+
     const inputs = document.querySelectorAll('.nickname-input');
     const selects = document.querySelectorAll('.animal-select');
     
     if (inputs.length === 0) {
         alert('플레이어 정보를 입력해주세요.');
-        return;
-    }
-
-    if (window.boardData.length === 0) {
-        alert('보드판 데이터를 아직 불러오는 중입니다. 잠시만 기다려주세요.');
         return;
     }
 
@@ -396,7 +395,6 @@ window.updateTurnUI = function () {
     const centerDiceBox = document.getElementById('centerDiceBox');
     if (centerDiceBox) centerDiceBox.innerText = '🎲 🎲';
     
-    // 내 차례가 되면 현재 위치 장소 정보 표시
     if (p) {
         const currentCell = window.boardData[p.pos];
         window.updateCenterDisplay(currentCell);
@@ -440,7 +438,6 @@ window.showWinModal = function (winnerIdx) {
 window.rollDice = function () {
     if (window.isMoving) return;
 
-    // 주사위를 던질 때 현재 서 있는 위치의 정보 표시
     const p = window.players[window.currentPlayer];
     if (p) {
         const currentCell = window.boardData[p.pos];
@@ -484,7 +481,6 @@ window.movePlayer = function (steps) {
     let startPos = p.pos;
     let stepCount = 0;
     
-    // movePlayer를 재귀적으로 호출할 때 방향 판별용
     const isBackward = steps < 0;
     const targetSteps = Math.abs(steps);
 
@@ -492,7 +488,6 @@ window.movePlayer = function (steps) {
         stepCount++;
         window.Synth.play('move');
         
-        // 앞으로 갈지 뒤로 갈지에 따라 위치 계산
         if (isBackward) {
             startPos--;
             if (startPos < 0) startPos = window.boardData.length - 1;
@@ -505,7 +500,7 @@ window.movePlayer = function (steps) {
         const currentCell = window.boardData[displayPos];
         window.updateCenterDisplay(currentCell);
         
-        if (!isBackward && displayPos === 0) p.score += 100; // 출발점 통과 보너스
+        if (!isBackward && displayPos === 0) p.score += 100;
 
         p.pos = displayPos;
         window.updateTokens();
@@ -584,7 +579,6 @@ window.openQuizModal = function (cell, attemptLevel) {
     const optionsContainer = document.getElementById('modalOptions');
     optionsContainer.innerHTML = '';
     
-    // 구글 시트에서 가져온 배열형 options 처리
     if (Array.isArray(qOpts)) {
         qOpts.forEach((opt, idx) => {
             const btn = document.createElement('button');
@@ -601,7 +595,6 @@ window.openQuizModal = function (cell, attemptLevel) {
 };
 
 window.closeQuizModal = function () {
-    // 기존에 작동 중이던 타이머가 있다면 확실하게 제거하여 중복 호출 방지
     if (window.quizTimeout) {
         clearTimeout(window.quizTimeout);
         window.quizTimeout = null;
@@ -681,7 +674,6 @@ window.checkAnswer = function (selected, correct, explanation) {
     resultMsg.style.display = 'block';
     btnNext.style.display = 'block';
 
-    // 기존 타이머 청소
     if (window.quizTimeout) clearTimeout(window.quizTimeout);
     if (window.countdownInterval) clearInterval(window.countdownInterval);
 
@@ -697,7 +689,6 @@ window.checkAnswer = function (selected, correct, explanation) {
         }
     }, 1000);
 
-    // 3초 후 자동 닫기
     window.quizTimeout = setTimeout(() => {
         window.closeQuizModal();
     }, 3000);
@@ -732,37 +723,18 @@ window.updateGameStatusInfo = function() {
     }
 };
 
-/* ⚙️ 관리자 설정 (칸 이름 & 사진 주소 실시간 구글 시트 연동) */
+/* ⚙️ 관리자 모드 (데이터 유실 방지를 위한 안내 전용 창) */
 window.openAdminModal = function() {
     const list = document.getElementById('adminImageList');
-    list.innerHTML = '';
-    
-    if (window.boardData.length === 0) {
-        list.innerHTML = '<div style="padding: 20px; text-align: center; color: #ef4444; font-weight: bold;">보드판 데이터를 아직 불러오지 못했습니다. 잠시 후 다시 시도해주세요.</div>';
-        document.getElementById('adminModal').style.display = 'flex';
-        return;
-    }
-    
-    window.boardData.forEach(cell => {
-        const div = document.createElement('div');
-        div.style.background = '#f8fafc';
-        div.style.padding = '10px';
-        div.style.borderRadius = '10px';
-        div.style.border = '1px solid #e2e8f0';
-        
-        div.innerHTML = `
-            <div style="font-size:12px; font-weight:800; color:#64748b; margin-bottom:6px;">칸 ID: ${cell.id}</div>
-            <div style="display: flex; flex-direction: column; gap: 6px;">
-                <label style="font-size:12px; font-weight:700; color:#1e293b;">칸 이름</label>
-                <input type="text" id="adminName_${cell.id}" value="${cell.name}" style="width:100%; padding:6px 8px; border:1px solid #cbd5e1; border-radius:6px; font-size:13px;">
-                
-                <label style="font-size:12px; font-weight:700; color:#1e293b; margin-top:4px;">사진 주소 (URL)</label>
-                <input type="text" id="adminImg_${cell.id}" value="${cell.img || ''}" style="width:100%; padding:6px 8px; border:1px solid #cbd5e1; border-radius:6px; font-size:12px;">
-            </div>
-        `;
-        list.appendChild(div);
-    });
-    
+    list.innerHTML = `
+        <div style="padding: 20px; text-align: center; color: #1e293b; line-height: 1.6;">
+            <p style="font-size: 15px; font-weight: bold; margin-bottom: 10px; color: #2563eb;">🛡️ 구글 시트 데이터 안전 보호 모드</p>
+            <p style="font-size: 13px; color: #475569;">
+                데이터 유실 사고를 방지하기 위해, 칸 이름·사진·퀴즈 수정은 <b>구글 시트(스프레드시트) 화면에서 직접 입력</b>해 주세요.<br><br>
+                구글 시트에서 내용을 수정하고 저장하신 뒤 게임을 새로고침하면 실시간으로 반영됩니다!
+            </p>
+        </div>
+    `;
     document.getElementById('adminModal').style.display = 'flex';
 };
 
@@ -770,35 +742,8 @@ window.closeAdminModal = function() {
     document.getElementById('adminModal').style.display = 'none';
 };
 
-// 관리자 설정 저장 시 구글 시트로 POST 데이터 전송 (양방향 연동)
-window.saveAdminSettings = async function() {
-    window.boardData.forEach(cell => {
-        const nameInput = document.getElementById(`adminName_${cell.id}`);
-        if (nameInput && nameInput.value.trim() !== '') {
-            cell.name = nameInput.value.trim();
-        }
-        const imgInput = document.getElementById(`adminImg_${cell.id}`);
-        if (imgInput) {
-            cell.img = imgInput.value.trim();
-        }
-    });
-
-    window.createBoard();
-    window.updateTokens();
+// 저장 기능 제거 (시트 데이터 보호)
+window.saveAdminSettings = function() {
     window.closeAdminModal();
-
-    alert('⏳ 변경된 내용을 구글 시트에 저장하는 중입니다...');
-
-    try {
-        await fetch(webAppUrl, {
-            method: 'POST',
-            mode: 'no-cors',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(window.boardData)
-        });
-        alert('✅ 구글 시트에 성공적으로 저장 및 연동되었습니다!');
-    } catch (error) {
-        console.error("구글 시트 저장 실패", error);
-        alert('❌ 구글 시트 저장 중 오류가 발생했습니다. 개발자 도구를 확인해주세요.');
-    }
+    alert('✅ 구글 시트 원본 데이터를 보호하기 위해 저장 기능이 안전 모드로 전환되었습니다. 구글 시트에서 직접 수정해 주세요!');
 };
