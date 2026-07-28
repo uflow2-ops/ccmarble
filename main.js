@@ -274,6 +274,14 @@ window.createBoard = function () {
         cellDiv.style.gridRow = cell.row;
         cellDiv.style.gridColumn = cell.col;
         cellDiv.id = `cell-${cell.id}`;
+        
+        // 💡 [수정된 부분] 출발 칸(id 0)이거나 특수공간이면 모두 special 이름표를 붙입니다.
+        if (cell.category === '특수공간' || cell.id === 0) {
+            cellDiv.setAttribute('data-category', 'special');
+        } else if (cell.category === '이벤트') {
+            cellDiv.setAttribute('data-category', 'event');
+        }
+
         cellDiv.innerHTML = `
             <div class="cell-category ${cell.catClass}">${cell.category}</div>
             <div class="cell-icon">${cell.icon}</div>
