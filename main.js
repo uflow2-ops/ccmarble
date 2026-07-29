@@ -396,7 +396,7 @@ window.updateTurnUI = function () {
 
     const rollBtn = document.getElementById('rollBtn');
     if (rollBtn) {
-        rollBtn.disabled = false;
+        rollBtn.disabled = false; // 💡 강제로 주사위 버튼 활성화 안전장치
         rollBtn.innerText = "🎲 주사위 던지기";
     }
 
