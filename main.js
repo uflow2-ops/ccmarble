@@ -730,28 +730,3 @@ window.updateGameStatusInfo = function() {
         infoEl.innerHTML = `🔄 턴 제한: <span style="color: #2563eb;">${window.currentTurnCount} / ${window.totalTurns} 턴</span>`;
     }
 };
-
-/* ⚙️ 관리자 모드 (데이터 유실 방지를 위한 안내 전용 창) */
-window.openAdminModal = function() {
-    const list = document.getElementById('adminImageList');
-    list.innerHTML = `
-        <div style="padding: 20px; text-align: center; color: #1e293b; line-height: 1.6;">
-            <p style="font-size: 15px; font-weight: bold; margin-bottom: 10px; color: #2563eb;">🛡️ 구글 시트 데이터 안전 보호 모드</p>
-            <p style="font-size: 13px; color: #475569;">
-                데이터 유실 사고를 방지하기 위해, 칸 이름·사진·퀴즈 수정은 <b>구글 시트(스프레드시트) 화면에서 직접 입력</b>해 주세요.<br><br>
-                구글 시트에서 내용을 수정하고 저장하신 뒤 게임을 새로고침하면 실시간으로 반영됩니다!
-            </p>
-        </div>
-    `;
-    document.getElementById('adminModal').style.display = 'flex';
-};
-
-window.closeAdminModal = function() {
-    document.getElementById('adminModal').style.display = 'none';
-};
-
-// 저장 기능 제거 (시트 데이터 보호)
-window.saveAdminSettings = function() {
-    window.closeAdminModal();
-    alert('✅ 구글 시트 원본 데이터를 보호하기 위해 저장 기능이 안전 모드로 전환되었습니다. 구글 시트에서 직접 수정해 주세요!');
-};
